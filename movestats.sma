@@ -2,6 +2,42 @@
 #include <fakemeta>
 #include <reapi>
 
+#define XYZ 3
+
+new Float:g_flOrigin[MAX_PLAYERS + 1][XYZ];
+new Float:g_flPrevOrigin[MAX_PLAYERS + 1][XYZ];
+
+new g_iPrevButtons[MAX_PLAYERS + 1];
+new g_iOldButtons[MAX_PLAYERS + 1];
+
+new bool:g_isLadder[MAX_PLAYERS + 1];
+new bool:g_isPrevLadder[MAX_PLAYERS + 1];
+
+new bool:g_isGround[MAX_PLAYERS + 1];
+new bool:g_isPrevGround[MAX_PLAYERS + 1];
+
+new bool:g_inDuck[MAX_PLAYERS + 1];
+new bool:g_inPrevDuck[MAX_PLAYERS + 1];
+
+new Float:g_flHorSpeed[MAX_PLAYERS + 1];
+new Float:g_flPrevHorSpeed[MAX_PLAYERS + 1];
+
+new Float:g_flMaxSpeed[MAX_PLAYERS + 1];
+
+new bool:g_isSGS[MAX_PLAYERS + 1];
+new bool:g_isSurfing[MAX_PLAYERS + 1];
+
+enum PLAYER_VER {
+	IN_MIDDLE,
+	IN_UPPED,
+	IN_DROPPED
+};
+
+new PLAYER_VER:g_eVerInfo[MAX_PLAYERS + 1];
+
+new Float:g_flDuckFirstZ[MAX_PLAYERS + 1];
+new Float:g_flJumpFirstZ[MAX_PLAYERS + 1];
+
 enum MOVE_TYPE {
 	MOVE_NOT = 0,
 	MOVE_BHOP,
@@ -10,6 +46,7 @@ enum MOVE_TYPE {
 }
 
 new MOVE_TYPE:g_eSessionMoveType[MAX_PLAYERS + 1];
+
 new bool:isSessionMove[MAX_PLAYERS + 1];
 
 enum FOG_TYPE {
@@ -34,43 +71,14 @@ enum MOVE_STATS {
 
 new g_eMoveStats[MAX_PLAYERS + 1][MOVE_STATS];
 
-new g_iFog[MAX_PLAYERS + 1];
-
-new g_iOldButtons[MAX_PLAYERS + 1];
-
-new Float:g_flPrevOrigin[MAX_PLAYERS + 1][3];
-new bool:g_isOldGround[MAX_PLAYERS + 1];
-new bool:g_bPrevLadder[MAX_PLAYERS + 1];
-new bool:g_bPrevInDuck[MAX_PLAYERS + 1];
-
-new bool:g_isSGS[MAX_PLAYERS + 1];
-
-new Float:g_flHorSpeed[MAX_PLAYERS + 1];
-new Float:g_flPrevHorSpeed[MAX_PLAYERS + 1];
-
 new bool:g_bOneReset[MAX_PLAYERS + 1];
 
-new g_iDucks[MAX_PLAYERS + 1];
-new g_iJumps[MAX_PLAYERS + 1];
-
-enum PLAYER_VER {
-	IS_MIDDLE,
-	IS_UPPED,
-	IS_DROPPED
-};
-
-new PLAYER_VER:g_iVerInfo[MAX_PLAYERS + 1];
-new Float:g_flDuckFirstZ[MAX_PLAYERS + 1];
-new Float:g_flJumpFirstZ[MAX_PLAYERS + 1];
-
-new Float:g_flMaxSpeed[MAX_PLAYERS + 1];
-
-new bool:g_bMoveOldSurfing[MAX_PLAYERS + 1];
-
 public plugin_init() {
-	register_plugin("HNS Move stats", "0.0.1", "OpenHNS");
+	register_plugin("HNS Move stats", "0.0.2", "OpenHNS");
 
 	RegisterHookChain(RG_PM_Move, "rgPM_Move", true);
+
+	RegisterHookChain(RG_CBasePlayer_Spawn, "rgPlayerSpawn");
 }
 
 public rgPM_Move(id) {
@@ -78,110 +86,102 @@ public rgPM_Move(id) {
 		return HC_CONTINUE;
 	}
 
-	new Float:flOrigin[3];
-	get_entvar(id, var_origin, flOrigin);
+	static iFog[MAX_PLAYERS + 1];
 
-	new bool:isLadder = bool:(get_entvar(id, var_movetype) == MOVETYPE_FLY);
-	new bool:isGround = bool:(get_entvar(id, var_flags) & FL_ONGROUND);
+	get_entvar(id, var_origin, g_flOrigin[id]);
+	g_isLadder[id] = bool:(get_entvar(id, var_movetype) == MOVETYPE_FLY);
+	g_isGround[id] = bool:(get_entvar(id, var_flags) & FL_ONGROUND);
+	g_inDuck[id] = bool:(get_entvar(id, var_flags) & FL_DUCKING);
+	g_iPrevButtons[id] = get_entvar(id, var_oldbuttons);
+	g_flMaxSpeed[id] = get_maxspeed(id);
 
-	new bool:inDuck = bool:(get_entvar(id, var_flags) & FL_DUCKING);
-
-	new iPrevButtons = get_entvar(id, var_oldbuttons);
-	
-	new Float:flVelosity[3]
+	new Float:flVelosity[3];
 	get_entvar(id, var_velocity, flVelosity);
 	g_flHorSpeed[id] = vector_hor_length(flVelosity);
 
-	isGround = isGround || isLadder;
+	g_isGround[id] = g_isGround[id] || g_isLadder[id];
 
-	g_isOldGround[id] = g_isOldGround[id] || g_bPrevLadder[id];
+	g_isPrevGround[id] = g_isPrevGround[id] || g_isPrevLadder[id];
 
-	if (isGround) {
-		g_iFog[id]++;
-
-		if (g_iFog[id] == 1) {
-			if (inDuck) {
-				g_isSGS[id] = true;
-			} else {
-				g_isSGS[id] = false;
-			}
-		}
-
-		if (g_iFog[id] <= 10) {
+	if (g_isGround[id]) {
+		if (iFog[id] < 10) {
+			iFog[id]++;
 			g_bOneReset[id] = true;
 		} else if (g_bOneReset[id]) {
 			check_and_show_move(id);
 			g_bOneReset[id] = false;
 		}
 
-	} else {
-		if (isUserSurfing(id, inDuck)) {
-			g_bMoveOldSurfing[id] = true;
+		if (iFog[id] == 1) {
+			if (g_inDuck[id]) {
+				g_isSGS[id] = true;
+			} else {
+				g_isSGS[id] = false;
+			}
 		}
-		if (g_isOldGround[id]) {
-			new bool:isDuck = !inDuck && !(iPrevButtons & IN_JUMP) && g_iOldButtons[id] & IN_DUCK;
-			new bool:isJump = !isDuck && iPrevButtons & IN_JUMP && !(g_iOldButtons[id] & IN_JUMP);
+	} else {
+		if (isUserSurfing(id, g_inDuck[id])) {
+			g_isSurfing[id] = true;
+		}
+		if (g_isPrevGround[id]) {
+			new bool:isDuck = !g_inDuck[id] && !(g_iPrevButtons[id] & IN_JUMP) && g_iOldButtons[id] & IN_DUCK;
+			new bool:isJump = !isDuck && g_iPrevButtons[id] & IN_JUMP && !(g_iOldButtons[id] & IN_JUMP);
 
 			if (isDuck) {
-				if (g_iFog[id] > 10) {
-					g_iDucks[id] = 0;
-					g_iVerInfo[id] = IS_MIDDLE;
-					g_flDuckFirstZ[id] = g_bPrevInDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
+				if (iFog[id] > 10) {
+					g_eVerInfo[id] = IN_MIDDLE;
+					g_flDuckFirstZ[id] = g_inPrevDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
 				} else {
-					g_iDucks[id]++;
 					if (!g_flDuckFirstZ[id]) {
-						g_flDuckFirstZ[id] = g_bPrevInDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
+						g_flDuckFirstZ[id] = g_inPrevDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
 					}
 					
-					if (g_iVerInfo[id] == IS_MIDDLE) {
-						new Float:flDuckZ = g_bPrevInDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
+					if (g_eVerInfo[id] == IN_MIDDLE) {
+						new Float:flDuckZ = g_inPrevDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
 						
 						if (flDuckZ - g_flDuckFirstZ[id] < -4.0) {
-							g_iVerInfo[id] = IS_DROPPED;
+							g_eVerInfo[id] = IN_DROPPED;
 						} else if (flDuckZ - g_flDuckFirstZ[id] > 4.0) {
-							g_iVerInfo[id] = IS_UPPED;
+							g_eVerInfo[id] = IN_UPPED;
 						}
 					}
 
-					move_stats_counter(id, g_isSGS[id] ? MOVE_SGS : MOVE_DDRUN, g_iFog[id], g_iVerInfo[id]);
+					move_stats_counter(id, g_isSGS[id] ? MOVE_SGS : MOVE_DDRUN, iFog[id], g_eVerInfo[id]);
 				}
 			}
 			if (isJump) {
-				if (g_iFog[id] > 10) {
-					g_iJumps[id] = 0;
-					g_iVerInfo[id] = IS_MIDDLE;
-					g_flJumpFirstZ[id] = g_bPrevInDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
+				if (iFog[id] > 10) {
+					g_eVerInfo[id] = IN_MIDDLE;
+					g_flJumpFirstZ[id] = g_inPrevDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
 				} else {
-					g_iJumps[id]++;
-
 					if (!g_flJumpFirstZ[id]) {
-						g_flJumpFirstZ[id] = g_bPrevInDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
+						g_flJumpFirstZ[id] = g_inPrevDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
 					}
 
-					if (g_iVerInfo[id] == IS_MIDDLE) {
-						new Float:flJumpZ = g_bPrevInDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
+					if (g_eVerInfo[id] == IN_MIDDLE) {
+						new Float:flJumpZ = g_inPrevDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
 
 						if (flJumpZ - g_flJumpFirstZ[id] < -4.0) {
-							g_iVerInfo[id] = IS_DROPPED;
+							g_eVerInfo[id] = IN_DROPPED;
 						} else if (flJumpZ - g_flJumpFirstZ[id] > 4.0) {
-							g_iVerInfo[id] = IS_UPPED;
+							g_eVerInfo[id] = IN_UPPED;
 						}
 					}
 				}
-				move_stats_counter(id, MOVE_BHOP, g_iFog[id], g_iVerInfo[id]);
+				move_stats_counter(id, MOVE_BHOP, iFog[id], g_eVerInfo[id]);
 			}
 		}
 
-		g_iFog[id] = 0;
+		iFog[id] = 0;
 	}
 
-	g_iOldButtons[id] = iPrevButtons;
+	g_iOldButtons[id] = g_iPrevButtons[id];
 
-	g_flPrevOrigin[id] = flOrigin;
+	g_flPrevOrigin[id] = g_flOrigin[id];
 
-	g_isOldGround[id] = isGround;
-	g_bPrevLadder[id] = isLadder;
-	g_bPrevInDuck[id] = inDuck;
+	g_isPrevGround[id] = g_isGround[id];
+	g_isPrevLadder[id] = g_isLadder[id];
+	g_inPrevDuck[id] = g_inDuck[id];
 
 	g_flPrevHorSpeed[id] = g_flHorSpeed[id]
 
@@ -198,7 +198,7 @@ public move_stats_counter(id, MOVE_TYPE:eMove, iFog, PLAYER_VER:iVerInfo) {
 
 	g_eMoveStats[id][STATS_COUNT]++;
 
-	if (iVerInfo == IS_DROPPED) {
+	if (iVerInfo == IN_DROPPED) {
 		g_eMoveStats[id][SATS_ARTIFACT] = ARTIFACT_DROP;
 	}
 
@@ -218,24 +218,24 @@ public move_stats_counter(id, MOVE_TYPE:eMove, iFog, PLAYER_VER:iVerInfo) {
 			}
 		}
 		case MOVE_SGS: {
-			switch(g_iFog[id]) {
+			switch(iFog) {
 				case 3: g_eMoveStats[id][STATS_FOG][FOG_PERFECT]++;
 				case 4: g_eMoveStats[id][STATS_FOG][FOG_GOOD]++;
 				default: g_eMoveStats[id][STATS_FOG][FOG_BAD]++;
 			}
 
-			if (g_bMoveOldSurfing[id]) {
+			if (g_isSurfing[id]) {
 				g_eMoveStats[id][SATS_ARTIFACT] = ARTIFACT_SURF;
 			}
 		}
 		case MOVE_DDRUN: {
-			switch(g_iFog[id]) {
+			switch(iFog) {
 				case 2: g_eMoveStats[id][STATS_FOG][FOG_PERFECT]++;
 				case 3: g_eMoveStats[id][STATS_FOG][FOG_GOOD]++;
 				default: g_eMoveStats[id][STATS_FOG][FOG_BAD]++;
 			}
 
-			if (g_bMoveOldSurfing[id]) {
+			if (g_isSurfing[id]) {
 				g_eMoveStats[id][SATS_ARTIFACT] = ARTIFACT_SURF;
 			}
 		}
@@ -246,6 +246,96 @@ public move_stats_counter(id, MOVE_TYPE:eMove, iFog, PLAYER_VER:iVerInfo) {
 
 	g_eMoveStats[id][STATS_PRECENT] = float(g_eMoveStats[id][STATS_FOG][FOG_PERFECT]) / float(g_eMoveStats[id][STATS_COUNT]) * 100.0;
 }
+
+public clear_move_stats(id) {
+	arrayset(g_flOrigin[id], 0.0, XYZ);
+	arrayset(g_flPrevOrigin[id], 0.0, XYZ);
+
+	g_iPrevButtons[id] = 0;
+	g_iOldButtons[id] = 0;
+
+	g_isLadder[id] = false;
+	g_isPrevLadder[id] = false;
+
+	g_isGround[id] = false;
+	g_isPrevGround[id] = false;
+
+	g_inDuck[id] = false;
+	g_inPrevDuck[id] = false;
+
+	g_flHorSpeed[id] = 0.0;
+	g_flPrevHorSpeed[id] = 0.0;
+
+	g_flMaxSpeed[id] = 0.0;
+
+	g_isSGS[id] = false;
+	g_isSurfing[id] = false;
+
+	g_flDuckFirstZ[id] = 0.0;
+	g_flJumpFirstZ[id] = 0.0;
+
+
+	isSessionMove[id] = false;
+	g_eSessionMoveType[id] = MOVE_NOT;
+	g_eMoveStats[id][STATS_COUNT] = 0;
+
+	g_eMoveStats[id][STATS_FOG][FOG_PERFECT] = 0;
+	g_eMoveStats[id][STATS_FOG][FOG_GOOD] = 0;
+	g_eMoveStats[id][STATS_FOG][FOG_BAD] = 0;
+
+	g_eMoveStats[id][STATS_PRECENT] = 0.0;
+
+	g_eMoveStats[id][STATS_AVG_SPEED] = 0.0;
+
+	g_eMoveStats[id][SATS_ARTIFACT] = ARTIFACT_SMESTA;
+}
+
+public client_connect(id) {
+	clear_move_stats(id);
+}
+
+public rgPlayerSpawn(id) {
+	clear_move_stats(id);
+}
+
+stock Float:vector_hor_length(Float:flVel[3]) {
+	new Float:flNorma = floatpower(flVel[0], 2.0) + floatpower(flVel[1], 2.0);
+	if (flNorma > 0.0)
+		return floatsqroot(flNorma);
+		
+	return 0.0;
+}
+
+stock Float:get_maxspeed(id) {
+	new Float:flMaxSpeed;
+	flMaxSpeed = get_entvar(id, var_maxspeed);
+	
+	return flMaxSpeed * 1.2;
+}
+
+stock bool:isUserSurfing(id, bool:inDuck) {
+	new Float:origin[3], Float:dest[3];
+	get_entvar(id, var_origin, origin);
+	
+	dest[0] = origin[0];
+	dest[1] = origin[1];
+	dest[2] = origin[2] - 1.0;
+
+	new Float:flFraction;
+
+	engfunc(EngFunc_TraceHull, origin, dest, 0, 
+		inDuck ? HULL_HEAD : HULL_HUMAN, id, 0);
+
+	get_tr2(0, TR_flFraction, flFraction);
+
+	if (flFraction >= 1.0) return false;
+	
+	get_tr2(0, TR_vecPlaneNormal, dest);
+
+	return dest[2] <= 0.7;
+}
+
+/* FRONT */
 
 stock check_and_show_move(id) {
 	if (!isSessionMove[id]) {
@@ -288,48 +378,4 @@ stock check_and_show_move(id) {
 	clear_move_stats(id);
 }
 
-public clear_move_stats(id) {
-	isSessionMove[id] = false;
-	g_eSessionMoveType[id] = MOVE_NOT;
-	g_eMoveStats[id][STATS_COUNT] = 0;
-
-	g_eMoveStats[id][STATS_FOG][FOG_PERFECT] = 0;
-	g_eMoveStats[id][STATS_FOG][FOG_GOOD] = 0;
-	g_eMoveStats[id][STATS_FOG][FOG_BAD] = 0;
-
-	g_eMoveStats[id][STATS_PRECENT] = 0.0;
-
-	g_eMoveStats[id][STATS_AVG_SPEED] = 0.0;
-
-	g_eMoveStats[id][SATS_ARTIFACT] = ARTIFACT_SMESTA;
-}
-
-stock Float:vector_hor_length(Float:flVel[3]) {
-	new Float:flNorma = floatpower(flVel[0], 2.0) + floatpower(flVel[1], 2.0);
-	if (flNorma > 0.0)
-		return floatsqroot(flNorma);
-		
-	return 0.0;
-}
-
-stock bool:isUserSurfing(id, bool:inDuck) {
-	new Float:origin[3], Float:dest[3];
-	get_entvar(id, var_origin, origin);
-	
-	dest[0] = origin[0];
-	dest[1] = origin[1];
-	dest[2] = origin[2] - 1.0;
-
-	new Float:flFraction;
-
-	engfunc(EngFunc_TraceHull, origin, dest, 0, 
-		inDuck ? HULL_HEAD : HULL_HUMAN, id, 0);
-
-	get_tr2(0, TR_flFraction, flFraction);
-
-	if (flFraction >= 1.0) return false;
-	
-	get_tr2(0, TR_vecPlaneNormal, dest);
-
-	return dest[2] <= 0.7;
-}
+/* FRONT */
