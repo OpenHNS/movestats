@@ -391,7 +391,23 @@ stock Visual:get_visual(id) {
 
 		}
 		case ARTIFACT_SURF, ARTIFACT_DROP: {
-			
+			switch (g_eSessionMoveType[id]) {
+				case MOVE_BHOP: {
+					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
+						eVisual = good
+					}
+				}
+				case MOVE_SGS: {
+					if (g_eMoveStats[id][STATS_AVG_SPEED] > 250.0 && g_eMoveStats[id][STATS_PRECENT] > 50.0) {
+						eVisual = good
+					}
+				}
+				case MOVE_DDRUN: {
+					if (g_eMoveStats[id][STATS_AVG_SPEED] > 250.0 && g_eMoveStats[id][STATS_PRECENT] > 50.0) {
+						eVisual = good
+					}
+				}
+			}
 		}
 	}
 
