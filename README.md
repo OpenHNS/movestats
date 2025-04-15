@@ -26,3 +26,9 @@
 - Добавить артефакты: slip, ladder, water
 - Добавить сессии: FallRun, DuckBhop
 - Добавить меню, добавить возможность выводить все свои сессии.
+
+## Спасибо
+
+### Тестировщики
+[hedqi](https://github.com/hedqi)
+[azurev_v](https://www.twitch.tv/azurev_v)
