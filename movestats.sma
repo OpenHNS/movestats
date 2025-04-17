@@ -352,13 +352,45 @@ public Visual:get_visual(id) {
 					}
 				}
 				case MOVE_SGS: {
-					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
-						eVisual = good
+					if (g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
+						if (g_eMoveStats[id][STATS_AVG_SPEED] >= 340.0) {
+							eVisual = god
+						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 315.0) {
+							eVisual = holy
+						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 270.0) {
+							eVisual = pro
+						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0) {
+							eVisual = good
+						}
+					} else {
+						if (g_eMoveStats[id][STATS_AVG_SPEED] >= 315.0) {
+							eVisual = holy
+						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 280.0) {
+							eVisual = pro
+						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 265.0) {
+							eVisual = good
+						}
 					}
 				}
 				case MOVE_DDRUN: {
-					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
-						eVisual = good
+					if (g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
+						if (g_eMoveStats[id][STATS_AVG_SPEED] >= 310.0) {
+							eVisual = god
+						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 290.0) {
+							eVisual = holy
+						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 270.0) {
+							eVisual = pro
+						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0) {
+							eVisual = good
+						}
+					} else {
+						if (g_eMoveStats[id][STATS_AVG_SPEED] >= 300.0) {
+							eVisual = holy
+						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 280.0) {
+							eVisual = pro
+						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 265.0) {
+							eVisual = good
+						}
 					}
 				}
 			}
