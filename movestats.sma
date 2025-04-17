@@ -25,16 +25,6 @@ new Float:g_flPrevHorSpeed[MAX_PLAYERS + 1];
 new Float:g_flMaxSpeed[MAX_PLAYERS + 1];
 
 new bool:g_isSGS[MAX_PLAYERS + 1];
-new bool:g_isSurfing[MAX_PLAYERS + 1];
-new bool:g_isArtifactLadder[MAX_PLAYERS + 1];
-
-enum PLAYER_VER {
-	IN_MIDDLE,
-	IN_UPPED,
-	IN_DROPPED
-};
-
-new PLAYER_VER:g_eVerInfo[MAX_PLAYERS + 1];
 
 new Float:g_flDuckFirstZ[MAX_PLAYERS + 1];
 new Float:g_flJumpFirstZ[MAX_PLAYERS + 1];
@@ -59,9 +49,12 @@ enum FOG_TYPE {
 enum MOVE_ARTIFACTS {
 	ARTIFACT_SMESTA,
 	ARTIFACT_SURF,
+	ARTIFACT_LADDER,
 	ARTIFACT_DROP,
-	ARTIFACT_LADDER
+	ARTIFACT_UP
 }
+
+new MOVE_ARTIFACTS:g_eIARArtifact[MAX_PLAYERS + 1];
 
 enum MOVE_STATS {
 	STATS_COUNT,
@@ -75,8 +68,12 @@ new g_eMoveStats[MAX_PLAYERS + 1][MOVE_STATS];
 
 new bool:g_bOneReset[MAX_PLAYERS + 1];
 
+new g_bCmdMyShow[MAX_PLAYERS + 1];
+
 public plugin_init() {
 	register_plugin("HNS Move stats", "0.0.3", "OpenHNS");
+
+	RegisterSayCmd("mystats", "movestats", "cmdMyShow", ADMIN_ALL, "Show my move stats");
 
 	RegisterHookChain(RG_PM_Move, "rgPM_Move", true);
 
@@ -106,7 +103,7 @@ public rgPM_Move(id) {
 	g_isPrevGround[id] = g_isPrevGround[id] || g_isPrevLadder[id];
 
 	if (g_isLadder[id]) {
-		g_isArtifactLadder[id] = true;
+		g_eIARArtifact[id] = ARTIFACT_LADDER;
 	}
 
 	if (g_isGround[id]) {
@@ -126,8 +123,8 @@ public rgPM_Move(id) {
 			}
 		}
 	} else {
-		if (isUserSurfing(id, g_inDuck[id])) {
-			g_isSurfing[id] = true;
+		if (isUserSurfing(id)) {
+			g_eIARArtifact[id] = ARTIFACT_SURF;
 		}
 		
 		if (g_isPrevGround[id]) {
@@ -136,45 +133,44 @@ public rgPM_Move(id) {
 
 			if (isDuck) {
 				if (iFog[id] > 10) {
-					g_eVerInfo[id] = IN_MIDDLE;
 					g_flDuckFirstZ[id] = g_inPrevDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
 				} else {
 					if (!g_flDuckFirstZ[id]) {
 						g_flDuckFirstZ[id] = g_inPrevDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
 					}
 					
-					if (g_eVerInfo[id] == IN_MIDDLE) {
+					if (g_eIARArtifact[id] == ARTIFACT_SMESTA) {
 						new Float:flDuckZ = g_inPrevDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
-						
+							
 						if (flDuckZ - g_flDuckFirstZ[id] < -4.0) {
-							g_eVerInfo[id] = IN_DROPPED;
+							g_eIARArtifact[id] = ARTIFACT_DROP;
 						} else if (flDuckZ - g_flDuckFirstZ[id] > 4.0) {
-							g_eVerInfo[id] = IN_UPPED;
+							g_eIARArtifact[id] = ARTIFACT_UP;
 						}
 					}
 
-					move_stats_counter(id, g_isSGS[id] ? MOVE_SGS : MOVE_DDRUN, iFog[id], g_eVerInfo[id]);
+					move_stats_counter(id, g_isSGS[id] ? MOVE_SGS : MOVE_DDRUN, iFog[id]);
 				}
 			}
 			if (isJump) {
 				if (iFog[id] > 10) {
-					g_eVerInfo[id] = IN_MIDDLE;
 					g_flJumpFirstZ[id] = g_inPrevDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
 				} else {
 					if (!g_flJumpFirstZ[id]) {
 						g_flJumpFirstZ[id] = g_inPrevDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
 					}
 
-					if (g_eVerInfo[id] == IN_MIDDLE) {
+					if (g_eIARArtifact[id] == ARTIFACT_SMESTA) {
 						new Float:flJumpZ = g_inPrevDuck[id] ? g_flPrevOrigin[id][2] + 18.0 : g_flPrevOrigin[id][2];
 
 						if (flJumpZ - g_flJumpFirstZ[id] < -4.0) {
-							g_eVerInfo[id] = IN_DROPPED;
+							g_eIARArtifact[id] = ARTIFACT_DROP;
 						} else if (flJumpZ - g_flJumpFirstZ[id] > 4.0) {
-							g_eVerInfo[id] = IN_UPPED;
+							g_eIARArtifact[id] = ARTIFACT_UP;
 						}
 					}
-					move_stats_counter(id, MOVE_BHOP, iFog[id], g_eVerInfo[id]);
+
+					move_stats_counter(id, MOVE_BHOP, iFog[id]);
 				}
 			}
 		}
@@ -196,22 +192,24 @@ public rgPM_Move(id) {
 }
 
 
-public move_stats_counter(id, MOVE_TYPE:eMove, iFog, PLAYER_VER:iVerInfo) {
+public move_stats_counter(id, MOVE_TYPE:eMove, iFog) {
 	if (g_eSessionMoveType[id] && (g_eSessionMoveType[id] != eMove)) {
 		check_and_show_move(id);
 	}
 
 	g_eSessionMoveType[id] = eMove;
 
+	if (g_eIARArtifact[id] == ARTIFACT_SURF) {
+		if (eMove == MOVE_SGS || eMove == MOVE_DDRUN) {
+			g_eMoveStats[id][SATS_ARTIFACT] = ARTIFACT_SURF;
+		}
+	}
+
+	if (g_eMoveStats[id][SATS_ARTIFACT] == ARTIFACT_SMESTA && g_eIARArtifact[id] != ARTIFACT_SMESTA) {
+		g_eMoveStats[id][SATS_ARTIFACT] = g_eIARArtifact[id];
+	}
+
 	g_eMoveStats[id][STATS_COUNT]++;
-
-	if (iVerInfo == IN_DROPPED) {
-		g_eMoveStats[id][SATS_ARTIFACT] = ARTIFACT_DROP; // TODO: Перебивает слайд
-	}
-
-	if (g_isArtifactLadder[id]) {
-		g_eMoveStats[id][SATS_ARTIFACT] = ARTIFACT_LADDER; // TODO: Сделать по красоте
-	}
 
 	if (g_eMoveStats[id][STATS_COUNT] >= 5) {
 		isSessionMove[id] = true;
@@ -234,20 +232,12 @@ public move_stats_counter(id, MOVE_TYPE:eMove, iFog, PLAYER_VER:iVerInfo) {
 				case 4: g_eMoveStats[id][STATS_FOG][FOG_GOOD]++;
 				default: g_eMoveStats[id][STATS_FOG][FOG_BAD]++;
 			}
-
-			if (g_isSurfing[id]) {
-				g_eMoveStats[id][SATS_ARTIFACT] = ARTIFACT_SURF;
-			}
 		}
 		case MOVE_DDRUN: {
 			switch(iFog) {
 				case 2: g_eMoveStats[id][STATS_FOG][FOG_PERFECT]++;
 				case 3: g_eMoveStats[id][STATS_FOG][FOG_GOOD]++;
 				default: g_eMoveStats[id][STATS_FOG][FOG_BAD]++;
-			}
-
-			if (g_isSurfing[id]) {
-				g_eMoveStats[id][SATS_ARTIFACT] = ARTIFACT_SURF;
 			}
 		}
 	}
@@ -280,8 +270,6 @@ public clear_move_stats(id) {
 	g_flMaxSpeed[id] = 0.0;
 
 	g_isSGS[id] = false;
-	g_isSurfing[id] = false;
-	g_isArtifactLadder[id] = false;
 
 	g_flDuckFirstZ[id] = 0.0;
 	g_flJumpFirstZ[id] = 0.0;
@@ -303,6 +291,7 @@ public clear_move_stats(id) {
 }
 
 public client_connect(id) {
+	g_bCmdMyShow[id] = true; // TODO: Save settings
 	clear_move_stats(id);
 }
 
@@ -310,44 +299,17 @@ public rgPlayerSpawn(id) {
 	clear_move_stats(id);
 }
 
-stock Float:vector_hor_length(Float:flVel[3]) {
-	new Float:flNorma = floatpower(flVel[0], 2.0) + floatpower(flVel[1], 2.0);
-	if (flNorma > 0.0)
-		return floatsqroot(flNorma);
-		
-	return 0.0;
-}
-
-stock Float:get_maxspeed(id) {
-	new Float:flMaxSpeed;
-	flMaxSpeed = get_entvar(id, var_maxspeed);
-	
-	return flMaxSpeed * 1.2;
-}
-
-stock bool:isUserSurfing(id, bool:inDuck) {
-	new Float:origin[3], Float:dest[3];
-	get_entvar(id, var_origin, origin);
-	
-	dest[0] = origin[0];
-	dest[1] = origin[1];
-	dest[2] = origin[2] - 1.0;
-
-	new Float:flFraction;
-
-	engfunc(EngFunc_TraceHull, origin, dest, 0, 
-		inDuck ? HULL_HEAD : HULL_HUMAN, id, 0);
-
-	get_tr2(0, TR_flFraction, flFraction);
-
-	if (flFraction >= 1.0) return false;
-	
-	get_tr2(0, TR_vecPlaneNormal, dest);
-
-	return dest[2] <= 0.7;
-}
-
 /* FRONT */
+
+public cmdMyShow(id) {
+	g_bCmdMyShow[id] = !g_bCmdMyShow[id];
+
+	if (g_bCmdMyShow[id]) {
+		client_print_color(id, print_team_blue, "[^3MOVE^1] Показывать все свои сессии: ^3Включено^1.");
+	} else {
+		client_print_color(id, print_team_blue, "[^3MOVE^1] Показывать все свои сессии: ^3Выключено^1.");
+	}
+}
 
 enum Visual {
 	not_show = 0,
@@ -357,7 +319,7 @@ enum Visual {
 	god
 };
 
-stock check_and_show_move(id) {
+public check_and_show_move(id) {
 	if (!isSessionMove[id]) {
 		clear_move_stats(id);
 		return;
@@ -372,7 +334,7 @@ stock check_and_show_move(id) {
 	clear_move_stats(id);
 }
 
-stock Visual:get_visual(id) {
+public Visual:get_visual(id) {
 	new Visual:eVisual = not_show;
 
 	switch (g_eMoveStats[id][SATS_ARTIFACT]) {
@@ -402,7 +364,7 @@ stock Visual:get_visual(id) {
 			}
 
 		}
-		case ARTIFACT_SURF, ARTIFACT_DROP: {
+		case ARTIFACT_SURF, ARTIFACT_DROP, ARTIFACT_LADDER: {
 			switch (g_eSessionMoveType[id]) {
 				case MOVE_BHOP: {
 					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
@@ -427,23 +389,19 @@ stock Visual:get_visual(id) {
 }
 
 
-stock show_sessions(id, Visual:eVisual) {
-	// if (eVisual == not_show) {
-	// 	return
-	// }
-
+public show_sessions(id, Visual:eVisual) {
 	new szArtifactMess[128];
 	new iLenArtifact;
 
 	switch (g_eMoveStats[id][SATS_ARTIFACT]) {
 		case ARTIFACT_SURF: {
-			iLenArtifact = format(szArtifactMess[iLenArtifact], sizeof szArtifactMess - iLenArtifact, "(^3on slide^1)");
+			iLenArtifact = format(szArtifactMess[iLenArtifact], sizeof szArtifactMess - iLenArtifact, "(on slide)");
 		}
 		case ARTIFACT_DROP: {
-			iLenArtifact = format(szArtifactMess[iLenArtifact], sizeof szArtifactMess - iLenArtifact, "(^3drop^1)");
+			iLenArtifact = format(szArtifactMess[iLenArtifact], sizeof szArtifactMess - iLenArtifact, "(drop)");
 		}
 		case ARTIFACT_LADDER: {
-			iLenArtifact = format(szArtifactMess[iLenArtifact], sizeof szArtifactMess - iLenArtifact, "(^3ladder^1)");
+			iLenArtifact = format(szArtifactMess[iLenArtifact], sizeof szArtifactMess - iLenArtifact, "(ladder)");
 		}
 	}
 
@@ -463,14 +421,91 @@ stock show_sessions(id, Visual:eVisual) {
 	}
 
 	switch(eVisual) {
-		case good: client_print_color(0, print_team_grey, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1. %s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], szArtifactMess);
-		case holy: client_print_color(0, print_team_blue, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1. %s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], szArtifactMess);
-		case pro: client_print_color(0, print_team_red, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1. %s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], szArtifactMess);
-		case god: client_print_color(0, print_team_red, "^3%n^4 completed ^3%d^4 %s: ^3%.0f%%%^4 perfect, post avg. speed: ^3%.2f^4. %s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], szArtifactMess);
-		case not_show: client_print_color(id, print_team_blue, "%n completed %d %s: %.0f%%% perfect, post avg. speed: %.2f. %s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], szArtifactMess);
+		case good: client_print_color(0, print_team_grey, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], szArtifactMess);
+		case holy: client_print_color(0, print_team_blue, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], szArtifactMess);
+		case pro: client_print_color(0, print_team_red, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], szArtifactMess);
+		case god: client_print_color(0, print_team_red, "^3%n^4 completed ^3%d^4 %s: ^3%.0f%%%^4 perfect, post avg. speed: ^3%.2f^4. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], szArtifactMess);
+		case not_show: {
+			if (g_bCmdMyShow[id]) {
+				client_print_color(id, print_team_blue, "You completed %d %s: %.0f%%% perfect, post avg. speed: %.2f. %s", g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], szArtifactMess);
+			}
+		}
 	}
 
 
 }
 
 /* FRONT */
+
+
+/* UTILS */
+
+stock Float:vector_hor_length(Float:flVel[3]) {
+	new Float:flNorma = floatpower(flVel[0], 2.0) + floatpower(flVel[1], 2.0);
+	if (flNorma > 0.0)
+		return floatsqroot(flNorma);
+		
+	return 0.0;
+}
+
+stock Float:get_maxspeed(id) {
+	new Float:flMaxSpeed;
+	flMaxSpeed = get_entvar(id, var_maxspeed);
+	
+	return flMaxSpeed * 1.2;
+}
+
+stock bool:isUserSurfing(id) {
+	new Float:origin[3], Float:dest[3];
+	get_entvar(id, var_origin, origin);
+	
+	dest[0] = origin[0];
+	dest[1] = origin[1];
+	dest[2] = origin[2] - 1.0;
+
+	new Float:flFraction;
+
+	engfunc(EngFunc_TraceHull, origin, dest, 0, 
+		g_inDuck[id] ? HULL_HEAD : HULL_HUMAN, id, 0);
+
+	get_tr2(0, TR_flFraction, flFraction);
+
+	if (flFraction >= 1.0) return false;
+	
+	get_tr2(0, TR_vecPlaneNormal, dest);
+
+	return dest[2] <= 0.7;
+}
+
+stock RegisterSayCmd(const szCmd[], const szShort[], const szFunc[], flags = -1, szInfo[] = "") {
+	new szTemp[65], szInfoLang[65];
+	format(szInfoLang, 64, "%L", LANG_SERVER, szInfo);
+
+	format(szTemp, 64, "say /%s", szCmd);
+	register_clcmd(szTemp, szFunc, flags, szInfoLang);
+
+	format(szTemp, 64, "say .%s", szCmd);
+	register_clcmd(szTemp, szFunc, flags, szInfoLang);
+
+	format(szTemp, 64, "/%s", szCmd);
+	register_clcmd(szTemp, szFunc, flags, szInfoLang);
+
+	format(szTemp, 64, "%s", szCmd);
+	register_clcmd(szTemp, szFunc, flags, szInfoLang);
+
+	format(szTemp, 64, "say /%s", szShort);
+	register_clcmd(szTemp, szFunc, flags, szInfoLang);
+
+	format(szTemp, 64, "say .%s", szShort);
+	register_clcmd(szTemp, szFunc, flags, szInfoLang);
+
+	format(szTemp, 64, "/%s", szShort);
+	register_clcmd(szTemp, szFunc, flags, szInfoLang);
+
+	format(szTemp, 64, "%s", szShort);
+	register_clcmd(szTemp, szFunc, flags, szInfoLang);
+
+	return 1;
+}
+
+/* UTILS */
