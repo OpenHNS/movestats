@@ -319,6 +319,18 @@ enum Visual {
 	god
 };
 
+new const g_szSounds[4][] = {
+    "openhns/impressive.wav",
+    "openhns/wickedsick.wav",
+	"openhns/ne_very.wav",
+	"openhns/vlastb.wav"
+}
+
+public plugin_precache() {
+    for(new i; i < sizeof(g_szSounds); i++)
+        precache_sound(g_szSounds[i]);
+}
+
 public check_and_show_move(id) {
 	if (!isSessionMove[id]) {
 		clear_move_stats(id);
@@ -329,6 +341,7 @@ public check_and_show_move(id) {
 
 	new Visual:eVisual = get_visual(id);
 
+	sound_sessions(id, eVisual);
 	show_sessions(id, eVisual);
 
 	clear_move_stats(id);
@@ -421,6 +434,23 @@ public Visual:get_visual(id) {
 }
 
 
+public sound_sessions(id, Visual:eVisual) {
+	new iPlayers[MAX_PLAYERS], iNum;
+	get_players(iPlayers, iNum, "ch");
+
+	for (new i = 0; i < iNum; i++) {
+		new iPlayer = iPlayers[i];
+
+		switch(eVisual) {
+		case good: client_cmd(iPlayer, "spk %s", g_szSounds[0]);
+		case holy: client_cmd(iPlayer, "spk %s", g_szSounds[1]);
+		case pro: client_cmd(iPlayer, "spk %s", g_szSounds[2]);
+		case god: client_cmd(iPlayer, "spk %s", g_szSounds[3]);
+		}
+	}
+}
+
+
 public show_sessions(id, Visual:eVisual) {
 	new szArtifactMess[128];
 	new iLenArtifact;
@@ -463,8 +493,6 @@ public show_sessions(id, Visual:eVisual) {
 			}
 		}
 	}
-
-
 }
 
 /* FRONT */
