@@ -364,11 +364,11 @@ public Visual:get_visual(id) {
 		case ARTIFACT_SMESTA: {
 			switch (g_eSessionMoveType[id]) {
 				case MOVE_BHOP: {
-					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 290.0 && g_eMoveStats[id][STATS_PRECENT] >= 80.0) {
+					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 280.0 && g_eMoveStats[id][STATS_PRECENT] >= 75.0) {
 						eVisual = god
-					} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 275.0 && g_eMoveStats[id][STATS_PRECENT] >= 70.0) {
+					} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 270.0 && g_eMoveStats[id][STATS_PRECENT] >= 65.0) {
 						eVisual = pro
-					} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 265.0 && g_eMoveStats[id][STATS_PRECENT] >= 60.0) {
+					} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 260.0 && g_eMoveStats[id][STATS_PRECENT] >= 55.0) {
 						eVisual = holy
 					} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
 						eVisual = good
@@ -423,17 +423,41 @@ public Visual:get_visual(id) {
 			switch (g_eSessionMoveType[id]) {
 				case MOVE_BHOP: {
 					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
-						eVisual = good
+						if (g_eMoveStats[id][STATS_AVG_SPEED] >= 280.0 && g_eMoveStats[id][STATS_PRECENT] >= 75.0) {
+							eVisual = god
+						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 270.0 && g_eMoveStats[id][STATS_PRECENT] >= 65.0) {
+							eVisual = pro
+						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 260.0 && g_eMoveStats[id][STATS_PRECENT] >= 55.0) {
+							eVisual = holy
+						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
+							eVisual = good
+						}
 					}
 				}
 				case MOVE_SGS: {
 					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
-						eVisual = good
+						if (g_eMoveStats[id][STATS_AVG_SPEED] >= 300.0) {
+							if (g_eMoveStats[id][STATS_PRECENT] >= 80.0) {
+								eVisual = pro
+							} else if (g_eMoveStats[id][STATS_PRECENT] >= 70.0) {
+								eVisual = holy
+							} else if (g_eMoveStats[id][STATS_PRECENT] >= 60.0) {
+								eVisual = good
+							}
+						}
 					}
 				}
 				case MOVE_DDRUN: {
 					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
-						eVisual = good
+						if (g_eMoveStats[id][STATS_AVG_SPEED] >= 300.0) {
+							if (g_eMoveStats[id][STATS_PRECENT] >= 80.0) {
+								eVisual = pro
+							} else if (g_eMoveStats[id][STATS_PRECENT] >= 70.0) {
+								eVisual = holy
+							} else if (g_eMoveStats[id][STATS_PRECENT] >= 60.0) {
+								eVisual = good
+							}
+						}
 					}
 				}
 			}
