@@ -2,6 +2,12 @@
 #include <fakemeta>
 #include <reapi>
 
+#define LOG_FILE_SMESTA "move_stats_smesta.log"
+#define LOG_FILE_SURF "move_stats_surf.log"
+#define LOG_FILE_LADDER "move_stats_ladder.log"
+#define LOG_FILE_DROP "move_stats_drop.log"
+#define LOG_FILE_UP "move_stats_up.log"
+
 #define XYZ 3
 
 new Float:g_flOrigin[MAX_PLAYERS + 1][XYZ];
@@ -351,7 +357,7 @@ public check_and_show_move(id) {
 
 	new Visual:eVisual = get_visual(id);
 
-	sound_sessions(id, eVisual);
+	//sound_sessions(id, eVisual);
 	show_sessions(id, eVisual);
 
 	clear_move_stats(id);
@@ -519,17 +525,20 @@ public show_sessions(id, Visual:eVisual) {
 		}
 	}
 
-	switch(eVisual) {
-		case good: client_print_color(0, print_team_grey, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1, max: ^3%.2f^1. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
-		case holy: client_print_color(0, print_team_blue, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1, max: ^3%.2f^1. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
-		case pro: client_print_color(0, print_team_red, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1, max: ^3%.2f^1. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
-		case god: client_print_color(0, print_team_red, "^3%n^4 completed ^3%d^4 %s: ^3%.0f%%%^4 perfect, post avg. speed: ^3%.2f^4, max: ^3%.2f^4. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
-		case not_show: {
-			if (g_bCmdMyShow[id]) {
-				client_print_color(id, print_team_blue, "You completed %d %s: %.0f%%% perfect, post avg. speed: %.2f, max: %.2f. %s", g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
-			}
-		}
-	}
+	UTIL_LogUser(id, g_eMoveStats[id][SATS_ARTIFACT], fmt("(%d - %s) P(%.0f%%%) AVG(%.2f) MAX(%.2f)", g_eMoveStats[id][STATS_COUNT], szMoveMess,
+	g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED]));
+
+	// switch(eVisual) {
+	// 	case good: client_print_color(0, print_team_grey, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1, max: ^3%.2f^1. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
+	// 	case holy: client_print_color(0, print_team_blue, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1, max: ^3%.2f^1. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
+	// 	case pro: client_print_color(0, print_team_red, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1, max: ^3%.2f^1. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
+	// 	case god: client_print_color(0, print_team_red, "^3%n^4 completed ^3%d^4 %s: ^3%.0f%%%^4 perfect, post avg. speed: ^3%.2f^4, max: ^3%.2f^4. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
+	// 	case not_show: {
+	// 		if (g_bCmdMyShow[id]) {
+	// 			client_print_color(id, print_team_blue, "You completed %d %s: %.0f%%% perfect, post avg. speed: %.2f, max: %.2f. %s", g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
+	// 		}
+	// 	}
+	// }
 }
 
 /* FRONT */
@@ -603,6 +612,41 @@ stock RegisterSayCmd(const szCmd[], const szShort[], const szFunc[], flags = -1,
 	register_clcmd(szTemp, szFunc, flags, szInfoLang);
 
 	return 1;
+}
+
+stock UTIL_LogUser(const id, MOVE_ARTIFACTS:artifact, const szCvar[], any:...) {
+	new szLogFile[128];
+	if(!szLogFile[0]) {
+		get_localinfo("amxx_logs", szLogFile, charsmax(szLogFile));
+		switch (artifact) {
+			case ARTIFACT_SMESTA: {
+				format(szLogFile, charsmax(szLogFile), "/%s/%s", szLogFile, LOG_FILE_SMESTA);
+			}
+			case ARTIFACT_SURF: {
+				format(szLogFile, charsmax(szLogFile), "/%s/%s", szLogFile, LOG_FILE_SURF);
+			}
+			case ARTIFACT_DROP: {
+				format(szLogFile, charsmax(szLogFile), "/%s/%s", szLogFile, LOG_FILE_DROP);
+			}
+			case ARTIFACT_UP: {
+				format(szLogFile, charsmax(szLogFile), "/%s/%s", szLogFile, LOG_FILE_UP);
+			}
+			case ARTIFACT_LADDER: {
+				format(szLogFile, charsmax(szLogFile), "/%s/%s", szLogFile, LOG_FILE_LADDER);
+			}
+		}
+	}
+	new iFile;
+	if( (iFile = fopen(szLogFile, "a")) ) {
+		new szName[32], szAuthid[32];
+		new message[128]; vformat(message, charsmax(message), szCvar, 4);
+		
+		get_user_name(id, szName, charsmax(szName));
+		get_user_authid(id, szAuthid, charsmax(szAuthid));
+		
+		fprintf(iFile, "L %s , %s : %s^n", szName, szAuthid, message);
+		fclose(iFile);
+	}
 }
 
 /* UTILS */
