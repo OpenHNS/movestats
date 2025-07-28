@@ -64,7 +64,7 @@ new MOVE_ARTIFACTS:g_eIARArtifact[MAX_PLAYERS + 1];
 enum MOVE_STATS {
 	STATS_COUNT,
 	STATS_FOG[FOG_TYPE],
-	Float:STATS_PRECENT,
+	Float:STATS_PERCENT,
 	Float:STATS_AVG_SPEED,
 	Float:STATS_MAX_SPEED,
 	MOVE_ARTIFACTS:SATS_ARTIFACT,
@@ -77,9 +77,9 @@ new bool:g_bOneReset[MAX_PLAYERS + 1];
 new g_bCmdMyShow[MAX_PLAYERS + 1];
 
 enum _: Forwards {
-	MS_SESSION_BHOP, // forward ms_session_bhop(id, iCount, flPresent, flAVGSpeed);
-	MS_SESSION_SGS, // forward ms_session_sgs(id, iCount, flPresent, flAVGSpeed);
-	MS_SESSION_DDRUN // forward ms_session_ddrun(id, iCount, flPresent, flAVGSpeed);
+	MS_SESSION_BHOP, // forward ms_session_bhop(id, iCount, flPercent, flAVGSpeed);
+	MS_SESSION_SGS, // forward ms_session_sgs(id, iCount, flPercent, flAVGSpeed);
+	MS_SESSION_DDRUN // forward ms_session_ddrun(id, iCount, flPercent, flAVGSpeed);
 }
 
 new g_hForwards[Forwards];
@@ -273,7 +273,7 @@ public move_stats_counter(id, MOVE_TYPE:eMove, iFog) {
 
 	g_eMoveStats[id][STATS_AVG_SPEED] += g_flHorSpeed[id];
 
-	g_eMoveStats[id][STATS_PRECENT] = float(g_eMoveStats[id][STATS_FOG][FOG_PERFECT]) / float(g_eMoveStats[id][STATS_COUNT]) * 100.0;
+	g_eMoveStats[id][STATS_PERCENT] = float(g_eMoveStats[id][STATS_FOG][FOG_PERFECT]) / float(g_eMoveStats[id][STATS_COUNT]) * 100.0;
 }
 
 public clear_move_stats(id) {
@@ -310,7 +310,7 @@ public clear_move_stats(id) {
 	g_eMoveStats[id][STATS_FOG][FOG_GOOD] = 0;
 	g_eMoveStats[id][STATS_FOG][FOG_BAD] = 0;
 
-	g_eMoveStats[id][STATS_PRECENT] = 0.0;
+	g_eMoveStats[id][STATS_PERCENT] = 0.0;
 	
 	g_eMoveStats[id][STATS_AVG_SPEED] = 0.0;
 	g_eMoveStats[id][STATS_MAX_SPEED] = 0.0;
@@ -382,18 +382,18 @@ public Visual:get_visual(id) {
 		case ARTIFACT_SMESTA: {
 			switch (g_eSessionMoveType[id]) {
 				case MOVE_BHOP: {
-					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 280.0 && g_eMoveStats[id][STATS_PRECENT] >= 75.0) {
+					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 280.0 && g_eMoveStats[id][STATS_PERCENT] >= 75.0) {
 						eVisual = god
-					} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 270.0 && g_eMoveStats[id][STATS_PRECENT] >= 65.0) {
+					} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 270.0 && g_eMoveStats[id][STATS_PERCENT] >= 65.0) {
 						eVisual = pro
-					} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 260.0 && g_eMoveStats[id][STATS_PRECENT] >= 55.0) {
+					} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 260.0 && g_eMoveStats[id][STATS_PERCENT] >= 55.0) {
 						eVisual = holy
-					} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
+					} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PERCENT] >= 50.0) {
 						eVisual = good
 					}
 				}
 				case MOVE_SGS: {
-					if (g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
+					if (g_eMoveStats[id][STATS_PERCENT] >= 50.0) {
 						if (g_eMoveStats[id][STATS_AVG_SPEED] >= 340.0) {
 							eVisual = god
 						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 315.0) {
@@ -414,7 +414,7 @@ public Visual:get_visual(id) {
 					}
 				}
 				case MOVE_DDRUN: {
-					if (g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
+					if (g_eMoveStats[id][STATS_PERCENT] >= 50.0) {
 						if (g_eMoveStats[id][STATS_AVG_SPEED] >= 310.0) {
 							eVisual = god
 						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 290.0) {
@@ -440,39 +440,39 @@ public Visual:get_visual(id) {
 		case ARTIFACT_SURF, ARTIFACT_DROP, ARTIFACT_UP, ARTIFACT_LADDER: {
 			switch (g_eSessionMoveType[id]) {
 				case MOVE_BHOP: {
-					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
-						if (g_eMoveStats[id][STATS_AVG_SPEED] >= 280.0 && g_eMoveStats[id][STATS_PRECENT] >= 75.0) {
+					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PERCENT] >= 50.0) {
+						if (g_eMoveStats[id][STATS_AVG_SPEED] >= 280.0 && g_eMoveStats[id][STATS_PERCENT] >= 75.0) {
 							eVisual = god
-						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 270.0 && g_eMoveStats[id][STATS_PRECENT] >= 65.0) {
+						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 270.0 && g_eMoveStats[id][STATS_PERCENT] >= 65.0) {
 							eVisual = pro
-						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 260.0 && g_eMoveStats[id][STATS_PRECENT] >= 55.0) {
+						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 260.0 && g_eMoveStats[id][STATS_PERCENT] >= 55.0) {
 							eVisual = holy
-						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
+						} else if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PERCENT] >= 50.0) {
 							eVisual = good
 						}
 					}
 				}
 				case MOVE_SGS: {
-					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
+					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PERCENT] >= 50.0) {
 						if (g_eMoveStats[id][STATS_AVG_SPEED] >= 300.0) {
-							if (g_eMoveStats[id][STATS_PRECENT] >= 80.0) {
+							if (g_eMoveStats[id][STATS_PERCENT] >= 80.0) {
 								eVisual = pro
-							} else if (g_eMoveStats[id][STATS_PRECENT] >= 70.0) {
+							} else if (g_eMoveStats[id][STATS_PERCENT] >= 70.0) {
 								eVisual = holy
-							} else if (g_eMoveStats[id][STATS_PRECENT] >= 60.0) {
+							} else if (g_eMoveStats[id][STATS_PERCENT] >= 60.0) {
 								eVisual = good
 							}
 						}
 					}
 				}
 				case MOVE_DDRUN: {
-					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PRECENT] >= 50.0) {
+					if (g_eMoveStats[id][STATS_AVG_SPEED] >= 250.0 && g_eMoveStats[id][STATS_PERCENT] >= 50.0) {
 						if (g_eMoveStats[id][STATS_AVG_SPEED] >= 300.0) {
-							if (g_eMoveStats[id][STATS_PRECENT] >= 80.0) {
+							if (g_eMoveStats[id][STATS_PERCENT] >= 80.0) {
 								eVisual = pro
-							} else if (g_eMoveStats[id][STATS_PRECENT] >= 70.0) {
+							} else if (g_eMoveStats[id][STATS_PERCENT] >= 70.0) {
 								eVisual = holy
-							} else if (g_eMoveStats[id][STATS_PRECENT] >= 60.0) {
+							} else if (g_eMoveStats[id][STATS_PERCENT] >= 60.0) {
 								eVisual = good
 							}
 						}
@@ -529,31 +529,31 @@ public show_sessions(id, Visual:eVisual) {
 		case MOVE_BHOP: {
 			iLenMove = format(szMoveMess[iLenMove], sizeof szMoveMess - iLenMove, "BHOP");
 			
-			ExecuteForward(g_hForwards[MS_SESSION_BHOP], _, id, g_eMoveStats[id][STATS_COUNT], g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED]);
+			ExecuteForward(g_hForwards[MS_SESSION_BHOP], _, id, g_eMoveStats[id][STATS_COUNT], g_eMoveStats[id][STATS_PERCENT], g_eMoveStats[id][STATS_AVG_SPEED]);
 		}
 		case MOVE_SGS: {
 			iLenMove = format(szMoveMess[iLenMove], sizeof szMoveMess - iLenMove, "SGS");
 
-			ExecuteForward(g_hForwards[MS_SESSION_SGS], _, id, g_eMoveStats[id][STATS_COUNT], g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED]);
+			ExecuteForward(g_hForwards[MS_SESSION_SGS], _, id, g_eMoveStats[id][STATS_COUNT], g_eMoveStats[id][STATS_PERCENT], g_eMoveStats[id][STATS_AVG_SPEED]);
 		}
 		case MOVE_DDRUN: {
 			iLenMove = format(szMoveMess[iLenMove], sizeof szMoveMess - iLenMove, "DDRUN");
 
-			ExecuteForward(g_hForwards[MS_SESSION_DDRUN], _, id, g_eMoveStats[id][STATS_COUNT], g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED]);
+			ExecuteForward(g_hForwards[MS_SESSION_DDRUN], _, id, g_eMoveStats[id][STATS_COUNT], g_eMoveStats[id][STATS_PERCENT], g_eMoveStats[id][STATS_AVG_SPEED]);
 		}
 	}
 
 	UTIL_LogUser(id, g_eMoveStats[id][SATS_ARTIFACT], fmt("(%d - %s) P(%.0f%%%) AVG(%.2f) MAX(%.2f)", g_eMoveStats[id][STATS_COUNT], szMoveMess,
-	g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED]));
+	g_eMoveStats[id][STATS_PERCENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED]));
 
 	// switch(eVisual) {
-	// 	case good: client_print_color(0, print_team_grey, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1, max: ^3%.2f^1. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
-	// 	case holy: client_print_color(0, print_team_blue, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1, max: ^3%.2f^1. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
-	// 	case pro: client_print_color(0, print_team_red, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1, max: ^3%.2f^1. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
-	// 	case god: client_print_color(0, print_team_red, "^3%n^4 completed ^3%d^4 %s: ^3%.0f%%%^4 perfect, post avg. speed: ^3%.2f^4, max: ^3%.2f^4. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
+	// 	case good: client_print_color(0, print_team_grey, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1, max: ^3%.2f^1. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PERCENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
+	// 	case holy: client_print_color(0, print_team_blue, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1, max: ^3%.2f^1. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PERCENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
+	// 	case pro: client_print_color(0, print_team_red, "^3%n^1 completed ^3%d^1 %s: ^3%.0f%%%^1 perfect, post avg. speed: ^3%.2f^1, max: ^3%.2f^1. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PERCENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
+	// 	case god: client_print_color(0, print_team_red, "^3%n^4 completed ^3%d^4 %s: ^3%.0f%%%^4 perfect, post avg. speed: ^3%.2f^4, max: ^3%.2f^4. ^3%s", id, g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PERCENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
 	// 	case not_show: {
 	// 		if (g_bCmdMyShow[id]) {
-	// 			client_print_color(id, print_team_blue, "You completed %d %s: %.0f%%% perfect, post avg. speed: %.2f, max: %.2f. %s", g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
+	// 			client_print_color(id, print_team_blue, "You completed %d %s: %.0f%%% perfect, post avg. speed: %.2f, max: %.2f. %s", g_eMoveStats[id][STATS_COUNT], szMoveMess, g_eMoveStats[id][STATS_PERCENT], g_eMoveStats[id][STATS_AVG_SPEED], g_eMoveStats[id][STATS_MAX_SPEED], szArtifactMess);
 	// 		}
 	// 	}
 	// }
