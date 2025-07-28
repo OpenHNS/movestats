@@ -76,6 +76,14 @@ new bool:g_bOneReset[MAX_PLAYERS + 1];
 
 new g_bCmdMyShow[MAX_PLAYERS + 1];
 
+enum _: Forwards {
+	MS_SESSION_BHOP, // forward ms_session_bhop(id, iCount, flPresent, flAVGSpeed);
+	MS_SESSION_SGS, // forward ms_session_sgs(id, iCount, flPresent, flAVGSpeed);
+	MS_SESSION_DDRUN // forward ms_session_ddrun(id, iCount, flPresent, flAVGSpeed);
+}
+
+new g_hForwards[Forwards];
+
 public plugin_init() {
 	register_plugin("HNS Move stats", "0.0.3", "OpenHNS");
 
@@ -84,6 +92,10 @@ public plugin_init() {
 	RegisterHookChain(RG_PM_Move, "rgPM_Move", true);
 
 	RegisterHookChain(RG_CBasePlayer_Spawn, "rgPlayerSpawn");
+
+	g_hForwards[MS_SESSION_BHOP] = CreateMultiForward("ms_session_bhop", ET_CONTINUE, FP_CELL, FP_CELL, FP_FLOAT, FP_FLOAT);
+	g_hForwards[MS_SESSION_SGS] = CreateMultiForward("ms_session_sgs", ET_CONTINUE, FP_CELL, FP_CELL, FP_FLOAT, FP_FLOAT);
+	g_hForwards[MS_SESSION_DDRUN] = CreateMultiForward("ms_session_ddrun", ET_CONTINUE, FP_CELL, FP_CELL, FP_FLOAT, FP_FLOAT);
 }
 
 public rgPM_Move(id) {
@@ -516,12 +528,18 @@ public show_sessions(id, Visual:eVisual) {
 	switch (g_eSessionMoveType[id]) {
 		case MOVE_BHOP: {
 			iLenMove = format(szMoveMess[iLenMove], sizeof szMoveMess - iLenMove, "BHOP");
+			
+			ExecuteForward(g_hForwards[MS_SESSION_BHOP], _, id, g_eMoveStats[id][STATS_COUNT], g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED]);
 		}
 		case MOVE_SGS: {
 			iLenMove = format(szMoveMess[iLenMove], sizeof szMoveMess - iLenMove, "SGS");
+
+			ExecuteForward(g_hForwards[MS_SESSION_SGS], _, id, g_eMoveStats[id][STATS_COUNT], g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED]);
 		}
 		case MOVE_DDRUN: {
 			iLenMove = format(szMoveMess[iLenMove], sizeof szMoveMess - iLenMove, "DDRUN");
+
+			ExecuteForward(g_hForwards[MS_SESSION_DDRUN], _, id, g_eMoveStats[id][STATS_COUNT], g_eMoveStats[id][STATS_PRECENT], g_eMoveStats[id][STATS_AVG_SPEED]);
 		}
 	}
 
